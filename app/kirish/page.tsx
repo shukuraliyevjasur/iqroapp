@@ -7,35 +7,29 @@ type Role = 'admin' | 'parent' | 'student';
 
 const ROLE_CONFIG = {
   admin: {
-    label: 'Admin',
-    labelUz: 'Admin',
+    label: 'Xodim',
     hint: 'PIN kiriting',
-    hintRu: 'Введите PIN',
     inputType: 'password' as const,
     placeholder: '••••••',
     maxLength: 10,
   },
   parent: {
     label: 'Ota-ona',
-    labelUz: 'Ota-ona',
     hint: 'Kirish kodingizni kiriting',
-    hintRu: 'Введите код доступа',
     inputType: 'text' as const,
     placeholder: 'ABC123',
     maxLength: 6,
   },
   student: {
     label: "O'quvchi",
-    labelUz: "O'quvchi",
     hint: 'Kirish kodingizni kiriting',
-    hintRu: 'Введите код доступа',
     inputType: 'text' as const,
     placeholder: 'ABC123',
     maxLength: 6,
   },
 };
 
-function LoginForm() {
+function KirishForm() {
   const router = useRouter();
   const params = useSearchParams();
   const role = (params.get('role') as Role) ?? 'parent';
@@ -59,7 +53,7 @@ function LoginForm() {
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error); setLoading(false); return; }
-      router.push('/admin/dashboard');
+      router.push('/markaz/boshqaruv');
     } else {
       const res = await fetch('/api/auth/access', {
         method: 'POST',
@@ -68,14 +62,12 @@ function LoginForm() {
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error); setLoading(false); return; }
-      router.push(role === 'parent' ? '/parent/home' : '/student/home');
+      router.push(role === 'parent' ? '/ota-ona/asosiy' : '/talaba/asosiy');
     }
   }
 
   return (
     <div className="min-h-screen bg-[#111111] flex flex-col items-center justify-center px-5">
-
-      {/* Logo */}
       <h1
         className="text-5xl font-semibold text-white tracking-widest mb-1"
         style={{ fontFamily: 'Georgia, serif' }}
@@ -86,12 +78,10 @@ function LoginForm() {
         O&apos;quv markazi
       </p>
 
-      {/* Role badge */}
       <p className="text-white/50 text-[10px] font-semibold uppercase tracking-widest mb-6">
         {config.label}
       </p>
 
-      {/* Card */}
       <form
         onSubmit={handleSubmit}
         className="w-full max-w-sm bg-white rounded-3xl p-6 space-y-4"
@@ -127,16 +117,13 @@ function LoginForm() {
         </button>
       </form>
 
-      {/* Role switcher */}
       <div className="flex gap-3 mt-6">
         {(['parent', 'student', 'admin'] as Role[]).map((r) => (
           <button
             key={r}
-            onClick={() => { router.push(`/login?role=${r}`); setValue(''); setError(''); }}
+            onClick={() => { router.push(`/kirish?role=${r}`); setValue(''); setError(''); }}
             className={`text-xs font-semibold px-3 py-1.5 rounded-full transition-all ${
-              role === r
-                ? 'bg-white text-[#111111]'
-                : 'text-white/40 hover:text-white/70'
+              role === r ? 'bg-white text-[#111111]' : 'text-white/40 hover:text-white/70'
             }`}
           >
             {ROLE_CONFIG[r].label}
@@ -147,10 +134,10 @@ function LoginForm() {
   );
 }
 
-export default function LoginPage() {
+export default function KirishPage() {
   return (
     <Suspense>
-      <LoginForm />
+      <KirishForm />
     </Suspense>
   );
 }
