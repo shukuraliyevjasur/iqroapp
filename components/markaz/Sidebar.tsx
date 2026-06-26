@@ -79,16 +79,16 @@ export function Sidebar() {
   }
 
   return (
-    <aside className="fixed top-0 left-0 h-screen w-60 bg-[#111111] flex flex-col z-30">
+    <aside className="fixed top-0 left-0 h-screen w-60 bg-[#C0181B] flex flex-col z-30">
       {/* Logo */}
-      <div className="px-6 pt-7 pb-6 border-b border-white/8">
+      <div className="px-6 pt-7 pb-6 border-b border-white/15">
         <h1
           className="text-2xl font-semibold text-white tracking-widest"
           style={{ fontFamily: 'Georgia, serif' }}
         >
           IQRO
         </h1>
-        <p className="text-white/30 text-[10px] tracking-widest uppercase mt-0.5">
+        <p className="text-white/50 text-[10px] tracking-widest uppercase mt-0.5">
           Boshqaruv paneli
         </p>
       </div>
@@ -103,8 +103,8 @@ export function Sidebar() {
               href={item.href}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
                 active
-                  ? 'bg-[#C0181B] text-white'
-                  : 'text-white/50 hover:text-white hover:bg-white/8'
+                  ? 'bg-white text-[#C0181B]'
+                  : 'text-white/70 hover:text-white hover:bg-white/15'
               }`}
             >
               {item.icon}
@@ -118,7 +118,7 @@ export function Sidebar() {
       <div className="px-3 pb-6">
         <button
           onClick={handleLogout}
-          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-white/30 hover:text-white/60 hover:bg-white/8 transition-all"
+          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-white/40 hover:text-white hover:bg-white/15 transition-all"
         >
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />

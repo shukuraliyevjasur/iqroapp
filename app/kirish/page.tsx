@@ -67,24 +67,27 @@ function KirishForm() {
   }
 
   return (
-    <div className="min-h-screen bg-[#111111] flex flex-col items-center justify-center px-5">
+    <div className="min-h-screen bg-[#C0181B] flex flex-col items-center justify-center px-5">
+      {/* Logo */}
       <h1
         className="text-5xl font-semibold text-white tracking-widest mb-1"
         style={{ fontFamily: 'Georgia, serif' }}
       >
         IQRO
       </h1>
-      <p className="text-white/40 text-xs tracking-widest uppercase mb-10">
+      <p className="text-white/50 text-xs tracking-widest uppercase mb-10">
         O&apos;quv markazi
       </p>
 
-      <p className="text-white/50 text-[10px] font-semibold uppercase tracking-widest mb-6">
-        {config.label}
+      {/* Role label */}
+      <p className="text-white/70 text-[10px] font-semibold uppercase tracking-widest mb-4">
+        {config.label} sifatida kirish
       </p>
 
+      {/* Card */}
       <form
         onSubmit={handleSubmit}
-        className="w-full max-w-sm bg-white rounded-3xl p-6 space-y-4"
+        className="w-full max-w-sm bg-white rounded-3xl p-6 space-y-4 shadow-xl shadow-red-900/20"
       >
         <div>
           <label className="block text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-2">
@@ -117,19 +120,29 @@ function KirishForm() {
         </button>
       </form>
 
-      <div className="flex gap-3 mt-6">
+      {/* Role switcher */}
+      <div className="flex gap-2 mt-6">
         {(['parent', 'student', 'admin'] as Role[]).map((r) => (
           <button
             key={r}
             onClick={() => { router.push(`/kirish?role=${r}`); setValue(''); setError(''); }}
             className={`text-xs font-semibold px-3 py-1.5 rounded-full transition-all ${
-              role === r ? 'bg-white text-[#111111]' : 'text-white/40 hover:text-white/70'
+              role === r
+                ? 'bg-white text-[#C0181B]'
+                : 'text-white/50 hover:text-white/80 border border-white/20 hover:border-white/40'
             }`}
           >
             {ROLE_CONFIG[r].label}
           </button>
         ))}
       </div>
+
+      <button
+        onClick={() => router.push('/')}
+        className="mt-4 text-white/30 text-xs hover:text-white/60 transition-colors"
+      >
+        ← Orqaga
+      </button>
     </div>
   );
 }
