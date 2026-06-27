@@ -1,29 +1,36 @@
 'use client';
 
-import { useState, Suspense } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
-type Role = 'admin' | 'parent' | 'student';
+type Role = 'admin' | 'parent' | 'student' | 'teacher';
 
-const ROLE_CONFIG = {
+const ROLE_CONFIG: Record<Role, { label: string; hint: string; inputType: 'password' | 'text'; placeholder: string; maxLength: number }> = {
   admin: {
     label: 'Xodim',
     hint: 'PIN kiriting',
-    inputType: 'password' as const,
+    inputType: 'password',
+    placeholder: '••••••',
+    maxLength: 10,
+  },
+  teacher: {
+    label: "O'qituvchi",
+    hint: 'PIN kiriting',
+    inputType: 'password',
     placeholder: '••••••',
     maxLength: 10,
   },
   parent: {
     label: 'Ota-ona',
     hint: 'Kirish kodingizni kiriting',
-    inputType: 'text' as const,
+    inputType: 'text',
     placeholder: 'ABC123',
     maxLength: 6,
   },
   student: {
     label: "O'quvchi",
     hint: 'Kirish kodingizni kiriting',
-    inputType: 'text' as const,
+    inputType: 'text',
     placeholder: 'ABC123',
     maxLength: 6,
   },
@@ -38,6 +45,19 @@ function KirishForm() {
   const [value, setValue] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Teacher-specific: list of teachers + selected
+  const [teachers, setTeachers] = useState<{ id: number; full_name: string }[]>([]);
+  const [teacherId, setTeacherId] = useState<string>('');
+
+  useEffect(() => {
+    if (role === 'teacher') {
+      fetch('/api/teachers/list').then(r => r.json()).then(data => {
+        setTeachers(data.teachers ?? []);
+        if (data.teachers?.length > 0) setTeacherId(String(data.teachers[0].id));
+      }).catch(() => {});
+    }
+  }, [role]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -54,6 +74,16 @@ function KirishForm() {
       const data = await res.json();
       if (!res.ok) { setError(data.error); setLoading(false); return; }
       router.push('/markaz/boshqaruv');
+    } else if (role === 'teacher') {
+      if (!teacherId) { setError("O'qituvchini tanlang"); setLoading(false); return; }
+      const res = await fetch('/api/auth/teacher', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pin: value, teacherId }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error); setLoading(false); return; }
+      router.push('/ustoz/sahifa');
     } else {
       const res = await fetch('/api/auth/access', {
         method: 'POST',
@@ -62,13 +92,12 @@ function KirishForm() {
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error); setLoading(false); return; }
-      router.push(role === 'parent' ? '/ota-ona/asosiy' : '/talaba/asosiy');
+      router.push(role === 'parent' ? '/ota-ona/bosh' : '/talaba/bosh');
     }
   }
 
   return (
     <div className="min-h-screen bg-[#C0181B] flex flex-col items-center justify-center px-5">
-      {/* Logo */}
       <h1 className="text-5xl font-semibold text-white tracking-widest mb-1 font-[family-name:var(--font-cinzel)]">
         IQRO
       </h1>
@@ -76,16 +105,33 @@ function KirishForm() {
         Iqro Academy
       </p>
 
-      {/* Role label */}
       <p className="text-white/70 text-[10px] font-semibold uppercase tracking-widest mb-4">
         {config.label} sifatida kirish
       </p>
 
-      {/* Card */}
       <form
         onSubmit={handleSubmit}
         className="w-full max-w-sm bg-white rounded-3xl p-6 space-y-4 shadow-xl shadow-red-900/20"
       >
+        {role === 'teacher' && (
+          <div>
+            <label className="block text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-2">
+              O&apos;qituvchini tanlang
+            </label>
+            <select
+              value={teacherId}
+              onChange={e => setTeacherId(e.target.value)}
+              className="w-full border border-gray-200 rounded-2xl px-4 py-3 text-sm text-[#1C1C2E] outline-none focus:border-[#C0181B] transition-colors"
+            >
+              {teachers.length === 0 ? (
+                <option value="">Yuklanmoqda...</option>
+              ) : teachers.map(t => (
+                <option key={t.id} value={t.id}>{t.full_name}</option>
+              ))}
+            </select>
+          </div>
+        )}
+
         <div>
           <label className="block text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-2">
             {config.hint}
@@ -93,13 +139,13 @@ function KirishForm() {
           <input
             type={config.inputType}
             value={value}
-            onChange={(e) => setValue(
-              role === 'admin' ? e.target.value : e.target.value.toUpperCase()
+            onChange={e => setValue(
+              role === 'admin' || role === 'teacher' ? e.target.value : e.target.value.toUpperCase()
             )}
             placeholder={config.placeholder}
             maxLength={config.maxLength}
             autoComplete="off"
-            autoFocus
+            autoFocus={role !== 'teacher'}
             className="w-full border border-gray-200 rounded-2xl px-4 py-3.5 text-center text-lg font-bold text-[#1C1C2E] tracking-widest outline-none focus:border-[#C0181B] transition-colors"
           />
         </div>
@@ -117,9 +163,8 @@ function KirishForm() {
         </button>
       </form>
 
-      {/* Role switcher */}
       <div className="flex gap-2 mt-6">
-        {(['parent', 'student', 'admin'] as Role[]).map((r) => (
+        {(['parent', 'student', 'teacher', 'admin'] as Role[]).map((r) => (
           <button
             key={r}
             onClick={() => { router.push(`/kirish?role=${r}`); setValue(''); setError(''); }}

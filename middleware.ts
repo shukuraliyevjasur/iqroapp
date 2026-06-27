@@ -3,7 +3,6 @@ import { NextRequest, NextResponse } from 'next/server';
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // Management portal
   if (pathname.startsWith('/markaz')) {
     const session = req.cookies.get('admin_session');
     if (session?.value !== process.env.AUTH_COOKIE_SECRET) {
@@ -11,7 +10,13 @@ export function middleware(req: NextRequest) {
     }
   }
 
-  // Parent portal
+  if (pathname.startsWith('/ustoz')) {
+    const session = req.cookies.get('teacher_session');
+    if (!session?.value) {
+      return NextResponse.redirect(new URL('/kirish?role=teacher', req.url));
+    }
+  }
+
   if (pathname.startsWith('/ota-ona')) {
     const session = req.cookies.get('parent_session');
     if (!session?.value) {
@@ -19,7 +24,6 @@ export function middleware(req: NextRequest) {
     }
   }
 
-  // Student portal
   if (pathname.startsWith('/talaba')) {
     const session = req.cookies.get('student_session');
     if (!session?.value) {
@@ -31,5 +35,5 @@ export function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/markaz/:path*', '/ota-ona/:path*', '/talaba/:path*'],
+  matcher: ['/markaz/:path*', '/ustoz/:path*', '/ota-ona/:path*', '/talaba/:path*'],
 };
