@@ -3,7 +3,7 @@ import { useState, useTransition } from 'react';
 import { createGroup, updateGroup, deleteGroup, moveStudentToGroup } from './actions';
 
 type Group = {
-  id: number; name: string; teacher_name: string;
+  id: number; name: string; teacher_name: string | null;
   schedule_days: string[]; schedule_time: string | null;
   max_students: number; status: string;
 };
@@ -107,10 +107,10 @@ export function GuruhlarClient({
         <Modal title="Yangi guruh" onClose={() => setShowAdd(false)}>
           <form onSubmit={handleCreate} className="space-y-4">
             <Field label="Guruh nomi" name="name" required />
-            <Field label="O'qituvchi" name="teacher_name" required />
             <Field label="Dars kunlari (vergul bilan)" name="schedule_days" placeholder="Du, Chor, Ju" />
             <Field label="Dars vaqti" name="schedule_time" placeholder="14:00" />
             <Field label="Max o'quvchilar" name="max_students" type="number" defaultValue="15" />
+            <p className="text-xs text-gray-400">O&apos;qituvchini tayinlash uchun O&apos;qituvchilar sahifasidan foydalaning.</p>
             <SubmitBtn pending={isPending} label="Saqlash" />
           </form>
         </Modal>
@@ -120,7 +120,10 @@ export function GuruhlarClient({
         <Modal title="Guruhni tahrirlash" onClose={() => setEditGroup(null)}>
           <form onSubmit={handleUpdate} className="space-y-4">
             <Field label="Guruh nomi" name="name" defaultValue={editGroup.name} required />
-            <Field label="O'qituvchi" name="teacher_name" defaultValue={editGroup.teacher_name} required />
+            <div className="bg-gray-50 rounded-xl p-3">
+              <p className="text-[10px] text-gray-400 uppercase tracking-widest mb-1">O&apos;qituvchi</p>
+              <p className="text-sm font-medium text-[#1C1C2E]">{editGroup.teacher_name ?? "Tayinlanmagan"}</p>
+            </div>
             <Field label="Dars kunlari" name="schedule_days" defaultValue={editGroup.schedule_days?.join(', ')} />
             <Field label="Dars vaqti" name="schedule_time" defaultValue={editGroup.schedule_time ?? ''} />
             <Field label="Max o'quvchilar" name="max_students" type="number" defaultValue={String(editGroup.max_students)} />

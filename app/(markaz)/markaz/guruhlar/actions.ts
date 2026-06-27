@@ -5,14 +5,13 @@ import { revalidatePath } from 'next/cache';
 export async function createGroup(formData: FormData) {
   const db = createServerClient();
   const name = (formData.get('name') as string).trim();
-  const teacher_name = (formData.get('teacher_name') as string).trim();
   const schedule_days = (formData.get('schedule_days') as string)
     .split(',').map(d => d.trim()).filter(Boolean);
   const schedule_time = (formData.get('schedule_time') as string).trim();
   const max_students = formData.get('max_students') ? Number(formData.get('max_students')) : 15;
 
   await db.from('groups').insert({
-    name, teacher_name, schedule_days, schedule_time, max_students, branch_id: 1,
+    name, schedule_days, schedule_time, max_students, branch_id: 1,
   });
   revalidatePath('/markaz/guruhlar');
 }
@@ -20,14 +19,13 @@ export async function createGroup(formData: FormData) {
 export async function updateGroup(id: number, formData: FormData) {
   const db = createServerClient();
   const name = (formData.get('name') as string).trim();
-  const teacher_name = (formData.get('teacher_name') as string).trim();
   const schedule_days = (formData.get('schedule_days') as string)
     .split(',').map(d => d.trim()).filter(Boolean);
   const schedule_time = (formData.get('schedule_time') as string).trim();
   const max_students = formData.get('max_students') ? Number(formData.get('max_students')) : 15;
   const status = formData.get('status') as string;
 
-  await db.from('groups').update({ name, teacher_name, schedule_days, schedule_time, max_students, status }).eq('id', id);
+  await db.from('groups').update({ name, schedule_days, schedule_time, max_students, status }).eq('id', id);
   revalidatePath('/markaz/guruhlar');
 }
 
