@@ -1,6 +1,6 @@
 'use client';
 import { useState, useTransition } from 'react';
-import { createTeacher, updateTeacher, deleteTeacher, updateTeacherGroups } from './actions';
+import { createTeacher, updateTeacher, deleteTeacher, updateTeacherGroups, resetTeacherPin } from './actions';
 
 type Teacher = { id: number; full_name: string; created_at: string };
 type Group = { id: number; name: string };
@@ -42,6 +42,14 @@ export function OqituvchilarClient({
     startTransition(async () => {
       await updateTeacher(editTeacher.id, fd);
       setEditTeacher(null);
+    });
+  }
+
+  function handleResetPin(id: number, name: string) {
+    if (!confirm(`${name} uchun PIN yangilansinmi?`)) return;
+    startTransition(async () => {
+      const result = await resetTeacherPin(id);
+      setNewPin(result.pin);
     });
   }
 
@@ -107,6 +115,7 @@ export function OqituvchilarClient({
                       <div className="flex gap-3 justify-end">
                         <button onClick={() => setAssignTeacher(t)} className="text-xs text-blue-500 hover:text-blue-700 transition-colors">Guruhlar</button>
                         <button onClick={() => setEditTeacher(t)} className="text-xs text-gray-400 hover:text-[#C0181B] transition-colors">Tahrirlash</button>
+                        <button onClick={() => handleResetPin(t.id, t.full_name)} className="text-xs text-gray-400 hover:text-amber-600 transition-colors">PIN yangilash</button>
                         <button onClick={() => handleDelete(t.id)} className="text-xs text-gray-400 hover:text-red-600 transition-colors">O&apos;chirish</button>
                       </div>
                     </td>

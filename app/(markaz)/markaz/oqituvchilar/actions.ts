@@ -41,6 +41,16 @@ export async function deleteTeacher(id: number) {
   revalidatePath('/markaz/guruhlar');
 }
 
+export async function resetTeacherPin(id: number): Promise<{ pin: string }> {
+  const db = createServerClient();
+  const pin = generatePin();
+  const pin_hash = await bcrypt.hash(pin, 10);
+  const { error } = await db.from('teachers').update({ pin_hash }).eq('id', id);
+  if (error) throw new Error(error.message);
+  revalidatePath('/markaz/oqituvchilar');
+  return { pin };
+}
+
 export async function updateTeacherGroups(teacherId: number, groupIds: number[]) {
   const db = createServerClient();
   const { data: teacher } = await db.from('teachers').select('full_name').eq('id', teacherId).single();
