@@ -82,14 +82,11 @@ export function Sidebar() {
     <aside className="fixed top-0 left-0 h-screen w-60 bg-[#C0181B] flex flex-col z-30">
       {/* Logo */}
       <div className="px-6 pt-7 pb-6 border-b border-white/15">
-        <h1
-          className="text-2xl font-semibold text-white tracking-widest"
-          style={{ fontFamily: 'Georgia, serif' }}
-        >
+        <h1 className="text-2xl font-semibold text-white tracking-widest font-[family-name:var(--font-cinzel)]">
           IQRO
         </h1>
         <p className="text-white/50 text-[10px] tracking-widest uppercase mt-0.5">
-          Boshqaruv paneli
+          Iqro Academy
         </p>
       </div>
 

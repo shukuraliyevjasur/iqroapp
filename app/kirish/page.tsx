@@ -69,14 +69,11 @@ function KirishForm() {
   return (
     <div className="min-h-screen bg-[#C0181B] flex flex-col items-center justify-center px-5">
       {/* Logo */}
-      <h1
-        className="text-5xl font-semibold text-white tracking-widest mb-1"
-        style={{ fontFamily: 'Georgia, serif' }}
-      >
+      <h1 className="text-5xl font-semibold text-white tracking-widest mb-1 font-[family-name:var(--font-cinzel)]">
         IQRO
       </h1>
       <p className="text-white/50 text-xs tracking-widest uppercase mb-10">
-        O&apos;quv markazi
+        Iqro Academy
       </p>
 
       {/* Role label */}
