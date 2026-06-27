@@ -1,6 +1,6 @@
 'use client';
 import { useState, useTransition } from 'react';
-import { createStudent, updateStudent, deleteStudent } from './actions';
+import { createStudent, updateStudent, deleteStudent, regenerateStudentCode, regenerateParentCode } from './actions';
 
 type Group = { id: number; name: string };
 type Student = {
@@ -13,11 +13,12 @@ type Student = {
   groups: { name: string } | null;
 };
 
-export function OquvchilarClient({ students, groups }: { students: Student[]; groups: Group[] }) {
+export function OquvchilarClient({ students, groups, parentCodeMap }: { students: Student[]; groups: Group[]; parentCodeMap: Record<number, string> }) {
   const [search, setSearch] = useState('');
   const [filterGroup, setFilterGroup] = useState('');
   const [showAdd, setShowAdd] = useState(false);
   const [editStudent, setEditStudent] = useState<Student | null>(null);
+  const [revealedCode, setRevealedCode] = useState<{ label: string; code: string } | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const filtered = students.filter(s => {
@@ -49,6 +50,25 @@ export function OquvchilarClient({ students, groups }: { students: Student[]; gr
   function handleDelete(id: number) {
     if (!confirm("O'quvchini o'chirishni tasdiqlaysizmi?")) return;
     startTransition(async () => { await deleteStudent(id); });
+  }
+
+  function handleRegenStudentCode(student: Student) {
+    if (!confirm(`${student.full_name} uchun kirish kodi yangilansinmi?`)) return;
+    startTransition(async () => {
+      const result = await regenerateStudentCode(student.id);
+      setRevealedCode({ label: `${student.full_name} — o'quvchi kodi`, code: result.code });
+      setEditStudent(null);
+    });
+  }
+
+  function handleRegenParentCode(student: Student) {
+    if (!confirm(`${student.full_name} ota-onasi uchun kirish kodi yangilansinmi?`)) return;
+    startTransition(async () => {
+      const result = await regenerateParentCode(student.id);
+      if (!result) { alert("Bu o'quvchiga bog'liq ota-ona topilmadi."); return; }
+      setRevealedCode({ label: `${student.full_name} — ota-ona kodi`, code: result.code });
+      setEditStudent(null);
+    });
   }
 
   return (
@@ -159,12 +179,52 @@ export function OquvchilarClient({ students, groups }: { students: Student[]; gr
                 <option value="inactive">Arxiv</option>
               </select>
             </div>
-            <div className="bg-gray-50 rounded-xl p-3">
-              <p className="text-[10px] text-gray-400 uppercase tracking-widest mb-1">Kirish kodi</p>
-              <p className="font-mono text-sm font-bold">{editStudent.access_code}</p>
+            <div className="bg-gray-50 rounded-xl p-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-[10px] text-gray-400 uppercase tracking-widest mb-0.5">O&apos;quvchi kodi</p>
+                  <p className="font-mono text-sm font-bold">{editStudent.access_code}</p>
+                </div>
+                <button type="button" onClick={() => handleRegenStudentCode(editStudent)}
+                  className="text-xs text-amber-600 hover:text-amber-800 transition-colors">
+                  Yangilash
+                </button>
+              </div>
+              {parentCodeMap[editStudent.id] !== undefined && (
+                <div className="flex items-center justify-between border-t border-gray-200 pt-2">
+                  <div>
+                    <p className="text-[10px] text-gray-400 uppercase tracking-widest mb-0.5">Ota-ona kodi</p>
+                    <p className="font-mono text-sm font-bold">{parentCodeMap[editStudent.id]}</p>
+                  </div>
+                  <button type="button" onClick={() => handleRegenParentCode(editStudent)}
+                    className="text-xs text-amber-600 hover:text-amber-800 transition-colors">
+                    Yangilash
+                  </button>
+                </div>
+              )}
             </div>
             <SubmitBtn pending={isPending} label="Saqlash" />
           </form>
+        </Modal>
+      )}
+
+      {/* Code reveal modal */}
+      {revealedCode && (
+        <Modal title="Yangi kirish kodi" onClose={() => setRevealedCode(null)}>
+          <div className="space-y-4">
+            <p className="text-xs text-gray-500">{revealedCode.label}</p>
+            <div className="bg-gray-50 rounded-xl p-4 text-center">
+              <p className="text-3xl font-mono font-bold tracking-widest text-[#1C1C2E]">{revealedCode.code}</p>
+            </div>
+            <button onClick={() => navigator.clipboard.writeText(revealedCode.code)}
+              className="w-full py-2 rounded-xl border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 transition-colors">
+              Nusxa olish
+            </button>
+            <button onClick={() => setRevealedCode(null)}
+              className="w-full py-2.5 rounded-xl bg-[#C0181B] text-white text-sm font-semibold hover:bg-[#a01418] transition-colors">
+              Tushundim
+            </button>
+          </div>
         </Modal>
       )}
     </>

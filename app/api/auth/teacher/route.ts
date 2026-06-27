@@ -16,19 +16,20 @@ export async function POST(req: NextRequest) {
   const db = createServerClient();
   const windowStart = new Date(Date.now() - WINDOW_MINUTES * 60 * 1000).toISOString();
 
-  const { count } = await db
-    .from('login_attempts')
-    .select('*', { count: 'exact', head: true })
-    .eq('ip', ip)
-    .eq('role', 'teacher')
-    .gte('failed_at', windowStart);
+  const [{ count: ipCount }, { count: teacherCount }] = await Promise.all([
+    db.from('login_attempts').select('*', { count: 'exact', head: true })
+      .eq('ip', ip).eq('role', 'teacher').gte('failed_at', windowStart),
+    db.from('login_attempts').select('*', { count: 'exact', head: true })
+      .eq('access_code', `teacher:${teacherId}`).eq('role', 'teacher').gte('failed_at', windowStart),
+  ]);
 
-  if ((count ?? 0) >= MAX_ATTEMPTS) {
+  if ((ipCount ?? 0) >= MAX_ATTEMPTS || (teacherCount ?? 0) >= MAX_ATTEMPTS) {
     return NextResponse.json(
       { error: `Too many attempts. Try again in ${WINDOW_MINUTES} minutes.` },
       { status: 429 },
     );
   }
+  const count = ipCount;
 
   const { data: teacher, error } = await db
     .from('teachers')
@@ -37,21 +38,24 @@ export async function POST(req: NextRequest) {
     .single();
 
   if (error || !teacher) {
-    await db.from('login_attempts').insert({ ip, role: 'teacher' });
+    await db.from('login_attempts').insert({ ip, role: 'teacher', access_code: `teacher:${teacherId}` });
     return NextResponse.json({ error: 'Teacher not found.' }, { status: 401 });
   }
 
   const valid = await bcrypt.compare(pin, teacher.pin_hash);
   if (!valid) {
-    await db.from('login_attempts').insert({ ip, role: 'teacher' });
-    const remaining = MAX_ATTEMPTS - ((count ?? 0) + 1);
+    await db.from('login_attempts').insert({ ip, role: 'teacher', access_code: `teacher:${teacherId}` });
+    const remaining = MAX_ATTEMPTS - ((ipCount ?? 0) + 1);
     return NextResponse.json(
       { error: `Wrong PIN. ${remaining} attempt${remaining === 1 ? '' : 's'} left.` },
       { status: 401 },
     );
   }
 
-  await db.from('login_attempts').delete().eq('ip', ip).eq('role', 'teacher');
+  await Promise.all([
+    db.from('login_attempts').delete().eq('ip', ip).eq('role', 'teacher'),
+    db.from('login_attempts').delete().eq('access_code', `teacher:${teacherId}`).eq('role', 'teacher'),
+  ]);
 
   const res = NextResponse.json({ ok: true, name: teacher.full_name });
   res.cookies.set('teacher_session', JSON.stringify({ id: teacher.id, name: teacher.full_name }), {

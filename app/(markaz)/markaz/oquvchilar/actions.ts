@@ -58,3 +58,21 @@ export async function deleteStudent(id: number) {
   await db.from('students').delete().eq('id', id);
   revalidatePath('/markaz/oquvchilar');
 }
+
+export async function regenerateStudentCode(id: number): Promise<{ code: string }> {
+  const db = createServerClient();
+  const code = await uniqueCode(db, 'students');
+  await db.from('students').update({ access_code: code }).eq('id', id);
+  revalidatePath('/markaz/oquvchilar');
+  return { code };
+}
+
+export async function regenerateParentCode(studentId: number): Promise<{ code: string } | null> {
+  const db = createServerClient();
+  const { data: parent } = await db.from('parents').select('id').eq('student_id', studentId).maybeSingle();
+  if (!parent) return null;
+  const code = await uniqueCode(db, 'parents');
+  await db.from('parents').update({ access_code: code }).eq('id', parent.id);
+  revalidatePath('/markaz/oquvchilar');
+  return { code };
+}

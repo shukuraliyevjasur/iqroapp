@@ -4,16 +4,21 @@ import { OquvchilarClient } from './OquvchilarClient';
 
 export default async function OquvchilarPage() {
   const db = createServerClient();
-  const [studentsRes, groupsRes] = await Promise.all([
+  const [studentsRes, groupsRes, parentsRes] = await Promise.all([
     db.from('students')
       .select('id, full_name, access_code, status, enrolled_at, group_id, groups(name)')
       .order('full_name'),
     db.from('groups').select('id, name').eq('status', 'active').order('name'),
+    db.from('parents').select('student_id, access_code'),
   ]);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const students = (studentsRes.data ?? []) as any[];
   const groups = groupsRes.data ?? [];
+  const parentCodeMap: Record<number, string> = {};
+  for (const p of parentsRes.data ?? []) {
+    if (p.student_id) parentCodeMap[p.student_id] = p.access_code;
+  }
 
   return (
     <div className="p-8">
@@ -23,7 +28,7 @@ export default async function OquvchilarPage() {
           <h1 className="text-2xl font-bold text-[#1C1C2E]">O&apos;quvchilar</h1>
         </div>
       </div>
-      <OquvchilarClient students={students} groups={groups} />
+      <OquvchilarClient students={students} groups={groups} parentCodeMap={parentCodeMap} />
     </div>
   );
 }

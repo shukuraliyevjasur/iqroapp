@@ -60,6 +60,8 @@ export async function updateTeacherGroups(teacherId: number, groupIds: number[])
   const removedIds = prevIds.filter(id => !groupIds.includes(id));
   await db.from('teacher_groups').delete().eq('teacher_id', teacherId);
   if (groupIds.length > 0) {
+    // Evict any other teacher currently assigned to these groups (one teacher per group)
+    await db.from('teacher_groups').delete().in('group_id', groupIds);
     await db.from('teacher_groups').insert(groupIds.map(group_id => ({ teacher_id: teacherId, group_id })));
     await db.from('groups').update({ teacher_name: teacher.full_name }).in('id', groupIds);
   }
