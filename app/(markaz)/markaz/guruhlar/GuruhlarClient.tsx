@@ -79,7 +79,9 @@ export function GuruhlarClient({
             <div className="flex items-start justify-between mb-3">
               <div>
                 <p className="font-bold text-[#1C1C2E]">{g.name}</p>
-                <p className="text-xs text-gray-400 mt-0.5">{g.teacher_name}</p>
+                <p className={`text-xs mt-0.5 ${g.teacher_name ? 'text-gray-400' : 'text-amber-500 font-medium'}`}>
+                  {g.teacher_name ?? 'Tayinlanmagan'}
+                </p>
               </div>
               <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${
                 g.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'

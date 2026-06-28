@@ -4,14 +4,25 @@ import { GuruhlarClient } from './GuruhlarClient';
 
 export default async function GuruhlarPage() {
   const db = createServerClient();
-  const [{ data: groups }, { data: students }] = await Promise.all([
+  const [{ data: rawGroups }, { data: students }] = await Promise.all([
     db.from('groups')
-      .select('id, name, teacher_name, schedule_days, schedule_time, max_students, status')
+      .select('id, name, schedule_days, schedule_time, max_students, status, teacher_groups(teachers(full_name))')
       .order('name'),
     db.from('students').select('id, full_name, group_id').eq('status', 'active').order('full_name'),
   ]);
 
-  // Count students per group
+  // Derive teacher_name live from the join instead of the cached column
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const groups = (rawGroups ?? []).map((g: any) => ({
+    id: g.id as number,
+    name: g.name as string,
+    schedule_days: g.schedule_days as string[],
+    schedule_time: g.schedule_time as string | null,
+    max_students: g.max_students as number,
+    status: g.status as string,
+    teacher_name: (g.teacher_groups as { teachers: { full_name: string } | null }[])[0]?.teachers?.full_name ?? null,
+  }));
+
   const studentCounts: Record<number, number> = {};
   for (const s of students ?? []) {
     if (s.group_id) studentCounts[s.group_id] = (studentCounts[s.group_id] ?? 0) + 1;
@@ -25,7 +36,7 @@ export default async function GuruhlarPage() {
           <h1 className="text-2xl font-bold text-[#1C1C2E]">Guruhlar</h1>
         </div>
       </div>
-      <GuruhlarClient groups={groups ?? []} students={students ?? []} studentCounts={studentCounts} />
+      <GuruhlarClient groups={groups} students={students ?? []} studentCounts={studentCounts} />
     </div>
   );
 }
