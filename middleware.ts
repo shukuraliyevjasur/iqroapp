@@ -4,8 +4,9 @@ export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   if (pathname.startsWith('/markaz')) {
+    const secret = process.env.AUTH_COOKIE_SECRET;
     const session = req.cookies.get('admin_session');
-    if (session?.value !== process.env.AUTH_COOKIE_SECRET) {
+    if (!secret || session?.value !== secret) {
       return NextResponse.redirect(new URL('/kirish?role=admin', req.url));
     }
   }
