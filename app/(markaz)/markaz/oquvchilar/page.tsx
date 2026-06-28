@@ -6,7 +6,7 @@ export default async function OquvchilarPage() {
   const db = createServerClient();
   const [studentsRes, groupsRes, parentsRes] = await Promise.all([
     db.from('students')
-      .select('id, full_name, access_code, status, enrolled_at, group_id, groups(name)')
+      .select('id, full_name, access_code, status, group_id, groups(name)')
       .order('full_name'),
     db.from('groups').select('id, name').eq('status', 'active').order('name'),
     db.from('parents').select('student_id, access_code'),
