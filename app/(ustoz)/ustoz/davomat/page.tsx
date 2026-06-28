@@ -17,24 +17,38 @@ export default async function UstozDavomatPage({
   if (!session) redirect('/kirish?role=teacher');
 
   const params = await searchParams;
+  const today = new Date().toISOString().split('T')[0];
 
-  // Only show groups assigned to this teacher
-  const { data: teacherGroups } = await db
-    .from('teacher_groups')
-    .select('group_id, groups(id, name)')
-    .eq('teacher_id', session.id);
+  const [{ data: permanentRows }, { data: coverageRows }] = await Promise.all([
+    db.from('teacher_groups')
+      .select('group_id, groups(id, name)')
+      .eq('teacher_id', session.id),
+    db.from('lesson_coverage')
+      .select('group_id, groups(id, name)')
+      .eq('teacher_id', session.id)
+      .eq('date', today),
+  ]);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const groups = ((teacherGroups ?? []).map(tg => tg.groups).flat().filter(Boolean)) as { id: number; name: string }[];
+  const seen = new Set<number>();
+  const allRows = [...(permanentRows ?? []), ...(coverageRows ?? [])];
+  const groups = allRows
+    .map(r => r.groups)
+    .flat()
+    .filter(Boolean)
+    .filter((g): g is { id: number; name: string } => {
+      if (seen.has((g as { id: number }).id)) return false;
+      seen.add((g as { id: number }).id);
+      return true;
+    });
+
   const selectedGroupId = params.group ? Number(params.group) : (groups[0]?.id ?? null);
-  const selectedDate = params.date ?? new Date().toISOString().split('T')[0];
+  const selectedDate = params.date ?? today;
 
   let students: { id: number; full_name: string }[] = [];
   let existingAttendance: Record<number, string> = {};
   let lessonTopic: { title: string; material_link: string | null } | null = null;
 
   if (selectedGroupId) {
-    // Double-check teacher is assigned to this specific group
     const assigned = groups.some(g => g.id === selectedGroupId);
     if (assigned) {
       const [{ data: groupStudents }, { data: attRows }, { data: lesson }] = await Promise.all([

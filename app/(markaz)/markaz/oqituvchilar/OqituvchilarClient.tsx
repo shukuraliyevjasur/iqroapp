@@ -1,25 +1,29 @@
 'use client';
 import { useState, useTransition } from 'react';
-import { createTeacher, updateTeacher, deleteTeacher, updateTeacherGroups, resetTeacherPin } from './actions';
+import { createTeacher, updateTeacher, deleteTeacher, updateTeacherGroups, resetTeacherPin, createLessonCoverage, deleteLessonCoverage } from './actions';
 
 type Teacher = { id: number; full_name: string; created_at: string };
 type Group = { id: number; name: string };
 type Assignment = { teacher_id: number; group_id: number };
+type Coverage = { id: number; group_id: number; teacher_id: number; date: string };
 
 export function OqituvchilarClient({
-  teachers, groups, assignments,
+  teachers, groups, assignments, coverage,
 }: {
   teachers: Teacher[];
   groups: Group[];
   assignments: Assignment[];
+  coverage: Coverage[];
 }) {
   const [showAdd, setShowAdd] = useState(false);
+  const [showCoverage, setShowCoverage] = useState(false);
   const [editTeacher, setEditTeacher] = useState<Teacher | null>(null);
   const [assignTeacher, setAssignTeacher] = useState<Teacher | null>(null);
   const [newPin, setNewPin] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const groupMap = Object.fromEntries(groups.map(g => [g.id, g.name]));
+  const teacherMap = Object.fromEntries(teachers.map(t => [t.id, t.full_name]));
 
   function getTeacherGroups(teacherId: number): number[] {
     return assignments.filter(a => a.teacher_id === teacherId).map(a => a.group_id);
@@ -69,14 +73,38 @@ export function OqituvchilarClient({
     });
   }
 
+  function handleCreateCoverage(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const fd = new FormData(e.currentTarget);
+    const groupId = Number(fd.get('group_id'));
+    const teacherId = Number(fd.get('teacher_id'));
+    const date = fd.get('date') as string;
+    startTransition(async () => {
+      await createLessonCoverage(groupId, teacherId, date);
+      setShowCoverage(false);
+    });
+  }
+
+  function handleDeleteCoverage(id: number) {
+    startTransition(async () => { await deleteLessonCoverage(id); });
+  }
+
+  const today = new Date().toISOString().split('T')[0];
+
   return (
     <>
-      <div className="mb-5">
+      <div className="mb-5 flex gap-3">
         <button
           onClick={() => setShowAdd(true)}
           className="px-5 py-2 rounded-xl bg-[#C0181B] text-white text-sm font-semibold hover:bg-[#a01418] transition-colors"
         >
           + O&apos;qituvchi qo&apos;shish
+        </button>
+        <button
+          onClick={() => setShowCoverage(true)}
+          className="px-5 py-2 rounded-xl bg-amber-500 text-white text-sm font-semibold hover:bg-amber-600 transition-colors"
+        >
+          + O&apos;rinbosar tayinlash
         </button>
       </div>
 
@@ -127,7 +155,46 @@ export function OqituvchilarClient({
         )}
       </div>
 
-      {/* Add modal */}
+      {/* Coverage list */}
+      {coverage.length > 0 && (
+        <div className="mt-8">
+          <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-3">O&apos;rinbosarlar</p>
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-100">
+                  {["Sana", "Guruh", "O'rinbosar", ""].map(h => (
+                    <th key={h} className="text-left px-5 py-3 text-[10px] font-semibold text-gray-400 uppercase tracking-widest">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {coverage.map(c => (
+                  <tr key={c.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
+                    <td className="px-5 py-3 font-mono text-sm text-[#1C1C2E]">
+                      {c.date}
+                      {c.date === today && <span className="ml-2 px-1.5 py-0.5 rounded text-[10px] bg-amber-100 text-amber-700 font-semibold">bugun</span>}
+                    </td>
+                    <td className="px-5 py-3 text-[#1C1C2E]">{groupMap[c.group_id] ?? `#${c.group_id}`}</td>
+                    <td className="px-5 py-3 text-[#1C1C2E]">{teacherMap[c.teacher_id] ?? `#${c.teacher_id}`}</td>
+                    <td className="px-5 py-3 text-right">
+                      <button
+                        onClick={() => handleDeleteCoverage(c.id)}
+                        disabled={isPending}
+                        className="text-xs text-gray-400 hover:text-red-600 transition-colors"
+                      >
+                        O&apos;chirish
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Add teacher modal */}
       {showAdd && (
         <Modal title="Yangi o'qituvchi" onClose={() => setShowAdd(false)}>
           <form onSubmit={handleCreate} className="space-y-4">
@@ -140,6 +207,40 @@ export function OqituvchilarClient({
             </div>
             <p className="text-xs text-gray-400">PIN avtomatik yaratiladi va bir marta ko&apos;rsatiladi.</p>
             <SubmitBtn pending={isPending} label="Saqlash" />
+          </form>
+        </Modal>
+      )}
+
+      {/* Coverage assignment modal */}
+      {showCoverage && (
+        <Modal title="O'rinbosar tayinlash" onClose={() => setShowCoverage(false)}>
+          <form onSubmit={handleCreateCoverage} className="space-y-4">
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Guruh</label>
+              <select name="group_id" required className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-[#C0181B]">
+                <option value="">— tanlang —</option>
+                {groups.map(g => (
+                  <option key={g.id} value={g.id}>{g.name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">O&apos;rinbosar o&apos;qituvchi</label>
+              <select name="teacher_id" required className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-[#C0181B]">
+                <option value="">— tanlang —</option>
+                {teachers.map(t => (
+                  <option key={t.id} value={t.id}>{t.full_name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Sana</label>
+              <input
+                type="date" name="date" required defaultValue={today}
+                className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-[#C0181B]"
+              />
+            </div>
+            <SubmitBtn pending={isPending} label="Tayinlash" />
           </form>
         </Modal>
       )}

@@ -4,10 +4,16 @@ import { OqituvchilarClient } from './OqituvchilarClient';
 
 export default async function OqituvchilarPage() {
   const db = createServerClient();
-  const [teachersRes, groupsRes, assignmentsRes] = await Promise.all([
+  const today = new Date().toISOString().split('T')[0];
+
+  const [teachersRes, groupsRes, assignmentsRes, coverageRes] = await Promise.all([
     db.from('teachers').select('id, full_name, created_at').order('full_name'),
     db.from('groups').select('id, name').eq('status', 'active').order('name'),
     db.from('teacher_groups').select('teacher_id, group_id'),
+    db.from('lesson_coverage')
+      .select('id, group_id, teacher_id, date')
+      .gte('date', today)
+      .order('date'),
   ]);
 
   return (
@@ -20,6 +26,7 @@ export default async function OqituvchilarPage() {
         teachers={(teachersRes.data ?? []) as { id: number; full_name: string; created_at: string }[]}
         groups={(groupsRes.data ?? []) as { id: number; name: string }[]}
         assignments={(assignmentsRes.data ?? []) as { teacher_id: number; group_id: number }[]}
+        coverage={(coverageRes.data ?? []) as { id: number; group_id: number; teacher_id: number; date: string }[]}
       />
     </div>
   );

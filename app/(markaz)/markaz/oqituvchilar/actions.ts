@@ -51,6 +51,19 @@ export async function resetTeacherPin(id: number): Promise<{ pin: string }> {
   return { pin };
 }
 
+export async function createLessonCoverage(groupId: number, teacherId: number, date: string) {
+  const db = createServerClient();
+  const { error } = await db.from('lesson_coverage').insert({ group_id: groupId, teacher_id: teacherId, date });
+  if (error) throw new Error(error.message);
+  revalidatePath('/markaz/oqituvchilar');
+}
+
+export async function deleteLessonCoverage(id: number) {
+  const db = createServerClient();
+  await db.from('lesson_coverage').delete().eq('id', id);
+  revalidatePath('/markaz/oqituvchilar');
+}
+
 export async function updateTeacherGroups(teacherId: number, groupIds: number[]) {
   const db = createServerClient();
   const { data: teacher } = await db.from('teachers').select('full_name').eq('id', teacherId).single();

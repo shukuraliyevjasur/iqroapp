@@ -12,14 +12,29 @@ export default async function UstozSahifaPage() {
   const session = await validateSession(await getTeacherSession(), db, ip, 'teachers', 'teacher');
   if (!session) redirect('/kirish?role=teacher');
 
-  const { data: teacherGroups } = await db
-    .from('teacher_groups')
-    .select('group_id, groups(id, name, schedule_days, schedule_time)')
-    .eq('teacher_id', session.id);
+  const today = new Date().toISOString().split('T')[0];
+
+  const [{ data: permanentRows }, { data: coverageRows }] = await Promise.all([
+    db.from('teacher_groups')
+      .select('group_id, groups(id, name, schedule_days, schedule_time)')
+      .eq('teacher_id', session.id),
+    db.from('lesson_coverage')
+      .select('group_id, groups(id, name, schedule_days, schedule_time)')
+      .eq('teacher_id', session.id)
+      .eq('date', today),
+  ]);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const groups = ((teacherGroups ?? []).map(tg => tg.groups).flat().filter(Boolean)) as any[];
-  const today = new Date().toISOString().split('T')[0];
+  const allRows = [...(permanentRows ?? []), ...(coverageRows ?? [])];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const seen = new Set<number>();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const groups = allRows.map(r => r.groups).flat().filter(Boolean).filter((g: any) => {
+    if (seen.has(g.id)) return false;
+    seen.add(g.id);
+    return true;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  }) as any[];
 
   return (
     <div className="p-8">
