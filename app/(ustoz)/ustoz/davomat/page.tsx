@@ -1,6 +1,8 @@
 export const dynamic = 'force-dynamic';
 import { redirect } from 'next/navigation';
+import { headers } from 'next/headers';
 import { getTeacherSession } from '@/lib/session';
+import { validateSession } from '@/lib/auth';
 import { createServerClient } from '@/lib/supabase/server';
 import { TeacherDavomatClient } from './TeacherDavomatClient';
 
@@ -9,11 +11,12 @@ export default async function UstozDavomatPage({
 }: {
   searchParams: Promise<{ group?: string; date?: string }>;
 }) {
-  const session = await getTeacherSession();
+  const db = createServerClient();
+  const ip = (await headers()).get('x-forwarded-for')?.split(',')[0] ?? 'unknown';
+  const session = await validateSession(await getTeacherSession(), db, ip, 'teachers', 'teacher');
   if (!session) redirect('/kirish?role=teacher');
 
   const params = await searchParams;
-  const db = createServerClient();
 
   // Only show groups assigned to this teacher
   const { data: teacherGroups } = await db

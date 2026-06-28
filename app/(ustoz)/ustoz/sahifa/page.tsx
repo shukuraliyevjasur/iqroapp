@@ -1,14 +1,17 @@
 export const dynamic = 'force-dynamic';
 import { redirect } from 'next/navigation';
+import { headers } from 'next/headers';
 import { getTeacherSession } from '@/lib/session';
+import { validateSession } from '@/lib/auth';
 import { createServerClient } from '@/lib/supabase/server';
 import Link from 'next/link';
 
 export default async function UstozSahifaPage() {
-  const session = await getTeacherSession();
+  const db = createServerClient();
+  const ip = (await headers()).get('x-forwarded-for')?.split(',')[0] ?? 'unknown';
+  const session = await validateSession(await getTeacherSession(), db, ip, 'teachers', 'teacher');
   if (!session) redirect('/kirish?role=teacher');
 
-  const db = createServerClient();
   const { data: teacherGroups } = await db
     .from('teacher_groups')
     .select('group_id, groups(id, name, schedule_days, schedule_time)')

@@ -1,14 +1,17 @@
 export const dynamic = 'force-dynamic';
 import { redirect } from 'next/navigation';
+import { headers } from 'next/headers';
 import { getStudentSession } from '@/lib/session';
+import { validateSession } from '@/lib/auth';
 import { createServerClient } from '@/lib/supabase/server';
 import { LessonList } from '@/app/ota-ona/darslar/LessonList';
 
 export default async function TalabaDarslarPage() {
-  const session = await getStudentSession();
+  const db = createServerClient();
+  const ip = (await headers()).get('x-forwarded-for')?.split(',')[0] ?? 'unknown';
+  const session = await validateSession(await getStudentSession(), db, ip, 'students', 'student');
   if (!session) redirect('/kirish?role=student');
 
-  const db = createServerClient();
   const { data: student } = await db.from('students').select('group_id').eq('id', session.id).single();
 
   let lessons: { lesson_date: string; title: string; material_link: string | null }[] = [];

@@ -1,14 +1,16 @@
 export const dynamic = 'force-dynamic';
 import { redirect } from 'next/navigation';
+import { headers } from 'next/headers';
 import { getParentSession } from '@/lib/session';
+import { validateSession } from '@/lib/auth';
 import { createServerClient } from '@/lib/supabase/server';
 import { ParentDashboard } from './ParentDashboard';
 
 export default async function OtaOnaBoshPage() {
-  const session = await getParentSession();
-  if (!session) redirect('/kirish?role=parent');
-
   const db = createServerClient();
+  const ip = (await headers()).get('x-forwarded-for')?.split(',')[0] ?? 'unknown';
+  const session = await validateSession(await getParentSession(), db, ip, 'parents', 'parent');
+  if (!session) redirect('/kirish?role=parent');
 
   const { data: parent } = await db
     .from('parents')

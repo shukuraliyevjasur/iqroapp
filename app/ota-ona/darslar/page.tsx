@@ -1,14 +1,17 @@
 export const dynamic = 'force-dynamic';
 import { redirect } from 'next/navigation';
+import { headers } from 'next/headers';
 import { getParentSession } from '@/lib/session';
+import { validateSession } from '@/lib/auth';
 import { createServerClient } from '@/lib/supabase/server';
 import { LessonList } from './LessonList';
 
 export default async function OtaOnaDarslarPage() {
-  const session = await getParentSession();
+  const db = createServerClient();
+  const ip = (await headers()).get('x-forwarded-for')?.split(',')[0] ?? 'unknown';
+  const session = await validateSession(await getParentSession(), db, ip, 'parents', 'parent');
   if (!session) redirect('/kirish?role=parent');
 
-  const db = createServerClient();
   const { data: parent } = await db.from('parents').select('student_id').eq('id', session.id).single();
   if (!parent?.student_id) redirect('/ota-ona/bosh');
 

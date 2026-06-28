@@ -1,14 +1,16 @@
 export const dynamic = 'force-dynamic';
 import { redirect } from 'next/navigation';
+import { headers } from 'next/headers';
 import { getStudentSession } from '@/lib/session';
+import { validateSession } from '@/lib/auth';
 import { createServerClient } from '@/lib/supabase/server';
 import { StudentDashboard } from './StudentDashboard';
 
 export default async function TalabaBoshPage() {
-  const session = await getStudentSession();
-  if (!session) redirect('/kirish?role=student');
-
   const db = createServerClient();
+  const ip = (await headers()).get('x-forwarded-for')?.split(',')[0] ?? 'unknown';
+  const session = await validateSession(await getStudentSession(), db, ip, 'students', 'student');
+  if (!session) redirect('/kirish?role=student');
   const { data: student } = await db
     .from('students')
     .select('id, full_name, group_id, groups(name, schedule_days, schedule_time, teacher_name)')
